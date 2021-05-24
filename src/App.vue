@@ -12,8 +12,7 @@
       <svg ref='svg' class='svg-overlay absolute'>
         <g class='scene'>
           <path ref='foundPath' :d='pathInfo.svgPath' stroke-width='6x' stroke='red' fill="transparent" ></path>
-          <route-point :point='routeStart' :scale='scale' :r='routeStart.r' symbol='A' v-if='routeStart.visible' :fontSize='28'></route-point>
-          <route-point :point='routeEnd' :scale='scale' :r='routeEnd.r' symbol='B' v-if='routeEnd.visible' :fontSize='28'></route-point>
+          <route-point v-for="(route, index) in routes" :point='route' :scale='scale' :r='route.r' :symbol='index' v-if='true' :fontSize='28'></route-point>
         </g>
       </svg>
       <div class='progress center absolute' v-if='progress.visible'>
@@ -29,6 +28,9 @@
         <div class='help' v-if='helpVisible'>
           {{getHelpText()}}
         </div>
+        <div>
+          <a href='#' @click.prevent='calculate' class='reset' v-if='helpVisible'>Calcular</a>
+        </div>
         <div class='route-info-container' v-if='!helpVisible' >
           <svg class='route-info' viewBox='0 0 400 40'  @click.prevent='detailsVisible = !detailsVisible'>
             <g>
@@ -42,8 +44,9 @@
               <path d='M372,28 L388,28 380.5,15z' stroke-width='0' stroke='white' fill="hsl(215, 34%, 64%)" v-if='detailsVisible'></path>
             </g>
           </svg>
-          <a href='#' @click.prevent='clearRoute' class='reset'>clear</a>
+          <a href='#' @click.prevent='clearRoute' class='reset'>Limpar</a>
         </div>
+
         <div v-if='detailsVisible && !helpVisible' class='details'>
           <div class='row'>
             <div class='label'>Path length:</div>
@@ -112,6 +115,8 @@ export default {
       progress: api.progress,
       routeStart: api.routeStart,
       routeEnd: api.routeEnd,
+      routes: api.routes,
+      finishedCalculating: api.finishedCalculating,
       stats: api.stats,
       scale: 1,
       pathInfo: api.pathInfo,
@@ -128,13 +133,14 @@ export default {
       return stats.graphNodeCount + ' nodes; ' + stats.graphLinksCount + ' edges';
     },
     helpVisible() {
-      return !(this.routeStart.visible && this.routeEnd.visible);
+      console.log(this.finishedCalculating);
+      return !(this.finishedCalculating);
     },
     pathText() {
       if (this.pathInfo.noPath) {
         return 'No path (' + this.stats.lastSearchTook + ')';
       }
-      return 'Found in: ' + this.stats.lastSearchTook;
+      return 'Encontrado em: ' + this.stats.lastSearchTook;
     }
   },
 
@@ -142,11 +148,14 @@ export default {
     clearRoute() {
       api.clearRoute();
     },
+    calculate() {
+      api.calculate();
+    },
     getHelpText() {
       if (!this.routeStart.visible) {
-        return 'Click anywhere to select starting point';
+        return 'Clique para adicionar a franquia de origem';
       } else if (!this.routeEnd.visible) {
-        return 'Click anywhere to select destination';
+        return 'Clique para adicionar a mais uma franquia';
       }
     },
 
@@ -193,7 +202,6 @@ export default {
       graph.forEachLink(function (link) {
         let from = graph.getNode(link.fromId).data;
         let to = graph.getNode(link.toId).data
-
         lines.add({ from, to });
       });
 

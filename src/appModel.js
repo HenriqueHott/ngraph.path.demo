@@ -36,8 +36,11 @@ let pathFindersLookup; // initialized after we load graph
 
 let pendingQueryStringUpdate = 0; // Used to throttle query string updates.
 
-let routeStart = new RouteHandleViewModel(updateRoute, findNearestPoint);
-let routeEnd = new RouteHandleViewModel(updateRoute, findNearestPoint);
+let routeStart = new RouteHandleViewModel(()=>{}, findNearestPoint);
+let routeEnd = new RouteHandleViewModel(()=>{}, findNearestPoint);
+let routes = [];
+
+let finishedCalculating = false;
 
 let stats = {
   visible: false,
@@ -63,6 +66,8 @@ const api = {
 
   routeStart, 
   routeEnd,
+  routes,
+  finishedCalculating,
   pathInfo: {
     svgPath: '',
     noPath: false
@@ -71,6 +76,7 @@ const api = {
   handleSceneClick,
   getRouteHandleUnderCursor,
   clearRoute,
+  calculate,
 
   pathFinderSettings: settings.pathFinderSettings,
   graphSettings: settings.graphSettings
@@ -118,13 +124,13 @@ function getGraphBBox() {
 }
 
 function updateRoute() {
-  if (!(routeStart.visible && routeEnd.visible)) {
+  if (!(routes.length > 1 && routes[0].visible && routes[1].visible)) {
     api.pathInfo.svgPath = '';
     return;
   } 
 
-  let fromId = routeStart.pointId;
-  let toId = routeEnd.pointId;
+  let fromId = routes[0].pointId;
+  let toId = routes[routes.length-1].pointId;
   updateQueryString();
 
   let start = window.performance.now();
@@ -149,7 +155,7 @@ function updateQueryString() {
 
   pendingQueryStringUpdate = setTimeout(() => {
     pendingQueryStringUpdate = 0;
-    if(!(routeStart.visible && routeEnd.visible)) return;
+    if(!(routes.length > 1 && routeStart.visible && routeEnd.visible)) return;
 
     let fromId = routeStart.pointId;
     let toId = routeEnd.pointId;
@@ -173,18 +179,36 @@ function getPathLength(path) {
 function clearRoute() {
   routeStart.clear();
   routeEnd.clear();
+  finishedCalculating = false;
+
   qs.set({
     fromId: -1,
     toId: -1
   });
 }
 
+function calculate() {
+  updateRoute();
+  finishedCalculating = true;
+  qs.set({
+    finishedCalculating: true,
+  });
+}
+
 function handleSceneClick(e) {
-  if (!routeStart.visible) {
-    setRoutePointFormEvent(e, routeStart);
-  } else if (!routeEnd.visible) {
-    setRoutePointFormEvent(e, routeEnd);
-  }
+  // if (!routeStart.visible) {
+    // setRoutePointFormEvent(e, routeStart);
+
+
+  // } else {
+    routes.push(new RouteHandleViewModel(()=>{}, findNearestPoint));
+    setRoutePointFormEvent(e, routes[routes.length-1]);
+
+    console.log(routes);
+  // }
+  // } else if (!routeEnd.visible) {
+  //   setRoutePointFormEvent(e, routeEnd);
+  // }
 }
 
 function setRoutePointFormEvent(e, routePointViewModel) {
@@ -222,8 +246,8 @@ function setApplicationModelVariables(loaded) {
   bus.fire('graph-loaded')
   setTimeout(() => {
     // in case if we have path in the query string
-    updateRoute();
-  }, 0);
+    //updateRoute();
+  }, 10);
 }
 
 function initHitTestTree(loadedPoints) {

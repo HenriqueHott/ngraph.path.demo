@@ -10,7 +10,7 @@ export default {
   props: {
     point: Object,
     scale: Number,
-    symbol: String,
+    symbol: Number,
     r: Number,
     strokeWidth: {
       type: Number,
