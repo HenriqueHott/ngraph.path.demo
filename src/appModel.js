@@ -40,7 +40,7 @@ let routeStart = new RouteHandleViewModel(()=>{}, findNearestPoint);
 let routeEnd = new RouteHandleViewModel(()=>{}, findNearestPoint);
 let routes = [];
 
-let finishedCalculating = false;
+let finishedCalculating;
 
 let stats = {
   visible: false,
@@ -127,14 +127,27 @@ function updateRoute() {
   if (!(routes.length > 1 && routes[0].visible && routes[1].visible)) {
     api.pathInfo.svgPath = '';
     return;
-  } 
-
-  let fromId = routes[0].pointId;
-  let toId = routes[routes.length-1].pointId;
-  updateQueryString();
-
+  }
   let start = window.performance.now();
-  let path = findPath(fromId, toId);
+
+  // Calcular melhor rota utilizando otimização
+  calculateBestRoute();
+
+
+
+  let v0 = routes[0].pointId;
+  let v1 = routes[1].pointId;
+  
+  let v2 = routes[2].pointId;
+  let v3 = routes[3].pointId;
+
+  //updateQueryString();
+
+  let path = findPath(v0, v1).reverse();
+  let path2 = findPath(v1, v2).reverse();
+  let path3 = findPath(v2, v0).reverse();
+
+  path = path.concat(path2).concat(path3);
   let end = window.performance.now() - start;
 
   api.pathInfo.noPath = path.length === 0;
@@ -143,6 +156,20 @@ function updateRoute() {
   stats.lastSearchTook = (Math.round(end * 100)/100) + 'ms';
   stats.pathLength = getPathLength(path);
   stats.visible = true;
+}
+
+function calculateBestRoute() {
+  let completeGraph = [];
+
+  routes.forEach((item, index) => {
+    completeGraph[index] = [];
+    routes.forEach((item2, index2) => {
+      completeGraph[index][index2] = index == index2 ? Number.MAX_SAFE_INTEGER : getPathLength(findPath(item.pointId, item2.pointId)); 
+    });
+  });
+
+  console.log(completeGraph);
+
 }
 
 function updateQueryString() {
@@ -177,10 +204,13 @@ function getPathLength(path) {
 }
 
 function clearRoute() {
-  routeStart.clear();
-  routeEnd.clear();
+  routes.forEach((element) => {
+    element.clear();
+  });
+  routes.splice(0,routes.length);
   finishedCalculating = false;
 
+  api.pathInfo.svgPath = "";
   qs.set({
     fromId: -1,
     toId: -1
@@ -190,25 +220,15 @@ function clearRoute() {
 function calculate() {
   updateRoute();
   finishedCalculating = true;
-  qs.set({
-    finishedCalculating: true,
-  });
 }
 
 function handleSceneClick(e) {
-  // if (!routeStart.visible) {
-    // setRoutePointFormEvent(e, routeStart);
-
-
-  // } else {
+  if (!finishedCalculating) {
     routes.push(new RouteHandleViewModel(()=>{}, findNearestPoint));
     setRoutePointFormEvent(e, routes[routes.length-1]);
 
     console.log(routes);
-  // }
-  // } else if (!routeEnd.visible) {
-  //   setRoutePointFormEvent(e, routeEnd);
-  // }
+  }
 }
 
 function setRoutePointFormEvent(e, routePointViewModel) {

@@ -12,7 +12,7 @@
       <svg ref='svg' class='svg-overlay absolute'>
         <g class='scene'>
           <path ref='foundPath' :d='pathInfo.svgPath' stroke-width='6x' stroke='red' fill="transparent" ></path>
-          <route-point v-for="(route, index) in routes" :point='route' :scale='scale' :r='route.r' :symbol='index' v-if='true' :fontSize='28'></route-point>
+          <route-point v-for="(route, index) in routes" :point='route' :scale='scale' :r='route.r' :symbol='index' v-if='route.visible' :fontSize='28'></route-point>
         </g>
       </svg>
       <div class='progress center absolute' v-if='progress.visible'>
@@ -35,8 +35,8 @@
           <svg class='route-info' viewBox='0 0 400 40'  @click.prevent='detailsVisible = !detailsVisible'>
             <g>
               <path d='M20,20 L80,20 M290,20 L350,20' stroke-width='4' stroke='red' fill="transparent" ></path>
-              <route-point :point='{x: 20, y: 20}' :scale='1' :r='12' symbol='A' :fontSize='12' :strokeWidth='1' :textY='4' ></route-point>
-              <route-point :point='{x: 350, y: 20}' :scale='1' :r='12' symbol='B' :fontSize='12' :strokeWidth='1' :textY='4'></route-point>
+              <route-point :point='{x: 20, y: 20}' :scale='1' :r='12' :symbol='1' :fontSize='12' :strokeWidth='1' :textY='4' ></route-point>
+              <route-point :point='{x: 350, y: 20}' :scale='1' :r='12' :symbol='2' :fontSize='12' :strokeWidth='1' :textY='4'></route-point>
               <text x='185.5' y='25' fill='white' text-anchor='middle' font-size='18px'>{{pathText}}</text>
             </g>
             <g>
@@ -133,8 +133,7 @@ export default {
       return stats.graphNodeCount + ' nodes; ' + stats.graphLinksCount + ' edges';
     },
     helpVisible() {
-      console.log(this.finishedCalculating);
-      return !(this.finishedCalculating);
+      return (!this.finishedCalculating);
     },
     pathText() {
       if (this.pathInfo.noPath) {
@@ -147,9 +146,11 @@ export default {
   methods: {
     clearRoute() {
       api.clearRoute();
+      this.finishedCalculating = false;
     },
     calculate() {
       api.calculate();
+      this.finishedCalculating = true;
     },
     getHelpText() {
       if (!this.routeStart.visible) {
