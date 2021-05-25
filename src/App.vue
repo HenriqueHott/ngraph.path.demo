@@ -66,14 +66,14 @@
           </select>
       </div>
     </div>
-    <div class='about-line'>
+    <!--<div class='about-line'>
       <a class='about-link' href='#' @click.prevent='aboutVisible = true'>about...</a>
       <a class='bold' href='http://github.com/anvaka/ngraph.path'>source code</a>
-    </div>
+    </div> 
     <div class='osm-note' v-if='!progress.visible && graphSettings.selected !== "USA-road-d.NY"'>
       Graph was extracted from <a href='https://www.openstreetmap.org' target='_blank'>www.openstreetmap.org</a>.
       It is made available under <a href='https://opendatacommons.org/licenses/odbl/summary/' target='_blank'>ODbL</a>
-    </div>
+    </div>-->
     <about v-if='aboutVisible' @close='aboutVisible = false'></about>
   </div>
 </template>

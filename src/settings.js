@@ -13,7 +13,8 @@ function getSettings(qs) {
 function getAvailableGraphs(qs) {
   let graphs = [{
     value: 'bh',
-    name: 'bh (120K vértices, 1.7 MB)'
+    name: 'Belo Horizonte'
+    // name: 'Belo Horizonte (120K vértices, 1.7 MB)'
   }
 ];
 

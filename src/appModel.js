@@ -23,7 +23,7 @@ const bus = require('./bus');
 
 // First of all, read what we currently have in the query string.
 const qs = queryState({
-  graph: 'amsterdam-roads'
+  graph: 'bh'
 });
 
 qs.onChange(updateStateFromQueryString);
@@ -124,31 +124,34 @@ function getGraphBBox() {
 }
 
 function updateRoute() {
-  if (!(routes.length > 1 && routes[0].visible && routes[1].visible)) {
+
+  let routesVisible = true;
+  routes.forEach(route => routesVisible = routesVisible && route.visible)
+
+  if (!(routes.length > 1 && routesVisible)) {
     api.pathInfo.svgPath = '';
     return;
   }
-  let start = window.performance.now();
 
-  // Calcular melhor rota utilizando otimização
-  calculateBestRoute();
-
-
-
-  let v0 = routes[0].pointId;
-  let v1 = routes[1].pointId;
-  
-  let v2 = routes[2].pointId;
-  let v3 = routes[3].pointId;
+  let fromId = routes[routes.length-1].pointId;
+  let toId = routes[0].pointId;
 
   //updateQueryString();
 
-  let path = findPath(v0, v1).reverse();
-  let path2 = findPath(v1, v2).reverse();
-  let path3 = findPath(v2, v0).reverse();
+  let start = window.performance.now();
+  let path = findPath(fromId, toId).reverse();
+  for(let i = 0; i + 1 < routes.length; i++) {
 
-  path = path.concat(path2).concat(path3);
+    fromId = routes[i].pointId;
+    toId = routes[i + 1].pointId;
+
+    path = path.concat(findPath(fromId, toId).reverse())
+  }
+  
   let end = window.performance.now() - start;
+
+  // Calcular melhor rota utilizando otimização
+  calculateBestRoute();
 
   api.pathInfo.noPath = path.length === 0;
   api.pathInfo.svgPath = getSvgPath(path);
