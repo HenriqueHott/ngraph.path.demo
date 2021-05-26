@@ -124,7 +124,6 @@ function getGraphBBox() {
 }
 
 function updateRoute() {
-
   let routesVisible = true;
   routes.forEach(route => routesVisible = routesVisible && route.visible)
 
@@ -133,31 +132,19 @@ function updateRoute() {
     return;
   }
 
-  let fromId = routes[routes.length-1].pointId;
-  let toId = routes[0].pointId;
-
-  //updateQueryString();
-
   let start = window.performance.now();
-  let path = findPath(fromId, toId).reverse();
-  for(let i = 0; i + 1 < routes.length; i++) {
 
-    fromId = routes[i].pointId;
-    toId = routes[i + 1].pointId;
-
-    path = path.concat(findPath(fromId, toId).reverse())
-  }
+  // Calcular melhor rota utilizando heuristica de otimizacao
+  let bestRoute = calculateBestRoute();
+  let path = bestRoute.path;
   
   let end = window.performance.now() - start;
-
-  // Calcular melhor rota utilizando otimização
-  calculateBestRoute();
 
   api.pathInfo.noPath = path.length === 0;
   api.pathInfo.svgPath = getSvgPath(path);
 
   stats.lastSearchTook = (Math.round(end * 100)/100) + 'ms';
-  stats.pathLength = getPathLength(path);
+  stats.pathLength = bestRoute.pathLength;
   stats.visible = true;
 }
 
@@ -171,31 +158,37 @@ function calculateBestRoute() {
     });
   });
 
-  console.log(completeGraph);
+  let permutations = [];
+  for (let i = 1; i <= routes.length-1; i++) {
+    permutations.push(i);
+  }
 
-}
+  permutations = getArrayPermutations(permutations);
+  permutations.forEach((item) => {
+    item.unshift(0);
+    item.push(0);
+  });
 
-function updateQueryString() {
-  if (pendingQueryStringUpdate) {
-    // iOS doesn't like when we update query string too often.
-    // need to throttle
-    clearTimeout(pendingQueryStringUpdate);
-    pendingQueryStringUpdate = 0;
-  } 
+  let result = [];
+  permutations.forEach((option) => {
+    let path = [];
 
-  pendingQueryStringUpdate = setTimeout(() => {
-    pendingQueryStringUpdate = 0;
-    if(!(routes.length > 1 && routeStart.visible && routeEnd.visible)) return;
+    for(let i = 0; i + 1 < option.length; i++) {
+      let fromId = routes[option[i]].pointId;
+      let toId = routes[option[i + 1]].pointId;
 
-    let fromId = routeStart.pointId;
-    let toId = routeEnd.pointId;
-    if (qs.get('fromId') != fromId) {
-      qs.set('fromId', fromId)
+      path = path.concat(findPath(fromId, toId).reverse());
     }
-    if (qs.get('toId') !== toId) {
-      qs.set('toId', toId);
-    }
-  }, 400);
+    let pathLength = getPathLength(path); 
+    result.push({path, pathLength});
+
+  });
+
+  var sortedResults = result.sort((a, b) => {
+    return parseInt(a.pathLength.replace(",", "")) - parseInt(b.pathLength.replace(",", ""));
+  });
+
+  return sortedResults[0];
 }
 
 function getPathLength(path) {
@@ -229,8 +222,6 @@ function handleSceneClick(e) {
   if (!finishedCalculating) {
     routes.push(new RouteHandleViewModel(()=>{}, findNearestPoint));
     setRoutePointFormEvent(e, routes[routes.length-1]);
-
-    console.log(routes);
   }
 }
 
@@ -399,4 +390,18 @@ function dataDistance(a, b) {
   let dy = a.y - b.y;
 
   return Math.sqrt(dx * dx + dy * dy)
+}
+
+function getArrayPermutations(arr, perms = [], len = arr.length) {
+  if (len === 1) perms.push(arr.slice(0))
+
+  for (let i = 0; i < len; i++) {
+    getArrayPermutations(arr, perms, len - 1)
+
+    len % 2 // parity dependent adjacent elements swap
+      ? [arr[0], arr[len - 1]] = [arr[len - 1], arr[0]]
+      : [arr[i], arr[len - 1]] = [arr[len - 1], arr[i]]
+  }
+
+  return perms
 }

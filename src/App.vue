@@ -35,8 +35,8 @@
           <svg class='route-info' viewBox='0 0 400 40'  @click.prevent='detailsVisible = !detailsVisible'>
             <g>
               <path d='M20,20 L80,20 M290,20 L350,20' stroke-width='4' stroke='red' fill="transparent" ></path>
-              <route-point :point='{x: 20, y: 20}' :scale='1' :r='12' :symbol='1' :fontSize='12' :strokeWidth='1' :textY='4' ></route-point>
-              <route-point :point='{x: 350, y: 20}' :scale='1' :r='12' :symbol='2' :fontSize='12' :strokeWidth='1' :textY='4'></route-point>
+              <route-point :point='{x: 20, y: 20}' :scale='1' :r='12' :symbol='0' :fontSize='12' :strokeWidth='1' :textY='4' ></route-point>
+              <route-point :point='{x: 350, y: 20}' :scale='1' :r='12' :symbol='routes.length-1' :fontSize='12' :strokeWidth='1' :textY='4'></route-point>
               <text x='185.5' y='25' fill='white' text-anchor='middle' font-size='18px'>{{pathText}}</text>
             </g>
             <g>
@@ -49,11 +49,11 @@
 
         <div v-if='detailsVisible && !helpVisible' class='details'>
           <div class='row'>
-            <div class='label'>Path length:</div>
-            <div class='col'>{{stats.pathLength}}</div>
+            <div class='label'>Distancia:</div>
+            <div class='col'>{{stats.pathLength}} m</div>
           </div>
           <div class='row'>
-            <div class='label'>Path finder:</div>
+            <div class='label'>Algoritmo:</div>
             <select class='col' v-model='pathFinder.selected' @change='updateSearchAlgorithm'>
               <option v-for='algorithm in pathFinder.algorithms' :value='algorithm.value'>{{algorithm.name}}</option>
             </select>
@@ -149,8 +149,10 @@ export default {
       this.finishedCalculating = false;
     },
     calculate() {
-      api.calculate();
-      this.finishedCalculating = true;
+      if (this.routes.length >= 2) {
+        api.calculate();
+        this.finishedCalculating = true;
+      }
     },
     getHelpText() {
       if (!this.routeStart.visible) {
